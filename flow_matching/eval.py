@@ -4,7 +4,6 @@ import argparse
 
 # import torch
 from torchmetrics.text.rouge import ROUGEScore
-rougeScore = ROUGEScore()
 
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 import nltk
@@ -35,7 +34,15 @@ def distinct_n_gram(hypn,n):
     return  dist_n
 
 def eval(generation_dict, sos='[CLS]', eos='[SEP]', sep='[SEP]', pad='[PAD]', direct_input=False, direct_output=False):
-
+    """
+    Args:
+        generation_dict: {"source": List[str], "reference": List[str], "recover": List[str]}
+    Returns:
+        bleu: float
+        rougel: float
+        dist1: float
+        avg_len: float
+    """
     def clean_text(text):
         return text.replace(eos, '').replace(sos, '').replace(sep, '').replace(pad, '').strip()
 
@@ -56,7 +63,7 @@ def eval(generation_dict, sos='[CLS]', eos='[SEP]', sep='[SEP]', pad='[PAD]', di
 
         avg_len.append(len(recover.split(' ')))
         bleu.append(get_bleu(recover, reference))
-        rougel.append(rougeScore(recover, reference)['rougeL_fmeasure'].tolist())
+        rougel.append(ROUGEScore()(recover, reference)['rougeL_fmeasure'].tolist())
         dist1.append(distinct_n_gram([recover], 1))
             
     # P, R, F1 = score(recovers, references, model_type='microsoft/deberta-xlarge-mnli', lang='en', verbose=True)

@@ -14,13 +14,25 @@ cat scripts/setup.sh
 ```
 
 ## Data Setup
-The data was downloaded from the DiffuSeq repository link: https://drive.google.com/drive/folders/1BHGCeHRZU7MQF3rsqXBIOCU2WIC3W6fb
+The data was downloaded from the DiffuSeq repository link: https://drive.google.com/drive/folders/1BHGCeHRZU7MQF3rsqXBIOCU2WIC3W6fb. It is already in the `datasets/QQP/` directory, but can be redownloaded if needed.
 
-The `.npy` files in `datasets/QQP/` are tokenized versions of the data. To generate them, run:
+The `.npy` files in `datasets/QQP/` are tokenized versions of the data. To re-generate them, run:
 ```bash
 # assuming data is in datasets/QQP/
 bash scripts/tokenize_data.sh
 ```
+
+## Training
+
+To train a model, run:
+```bash
+nohup bash scripts/run.sh > nohup.out 2>&1 &
+```
+
+The script will create a checkpoint directory in the `diffusion_models/` directory, and will log losses/eval scores here. It will also save checkpoints that can be used for any downstream analysis.
+You can also use `sbatch scripts/run.sh` to run the script on a SLURM GPU cluster.
+
+The script calls `flow_matching/train.py` with specific arguments. The default values of these arguments, along with some description, are specified in `flow_matching/utils.py`.
 
 ## Acknowledgement
 

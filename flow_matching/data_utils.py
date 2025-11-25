@@ -107,40 +107,41 @@ def tokenize_corpus(data_dir, seq_len, tokenizer, split):
     np.save(out_path, sentence_lst, allow_pickle=True)
     print(f'### Saved tokenized corpus with shape {sentence_lst["src"].shape} to {out_path}')
 
-
-
-def load_embeddings(folder):
-    x_embedding = np.load(folder + "/input_id_x_processed.npy", mmap_mode='r')
-    y_embedding = np.load(folder + "/input_id_y_processed.npy", mmap_mode='r')
-    x_encoding = np.load(folder + "/input_id_x.npy", mmap_mode='r')
-    y_encoding = np.load(folder + "/input_id_y.npy", mmap_mode='r')
-    return jnp.array(x_embedding), jnp.array(y_embedding), jnp.array(x_encoding), jnp.array(y_encoding)
+def get_embedding_matrix(data_dir, use_random_embeddings, vocab_size, embedding_dimension, random_emb_key):
+    if use_random_embeddings:
+        embedding_matrix = random.normal(random.PRNGKey(random_emb_key), (vocab_size, embedding_dimension))
+    else:
+        embedding_matrix = np.load(os.path.abspath(f'{data_dir}/embedding_matrix.npy'))
+        embedding_matrix = jnp.array(embedding_matrix)
+    return embedding_matrix
 
 class QQPDataGenerator():
-    def __init__(self, args, folder, mode="unconditional_generation", force_single_loop=False):
+    def __init__(self, args, split, mode="unconditional_generation", force_single_loop=False):
         self.key = random.PRNGKey(RNGKeys().DataGenerationKey)
         self.bsz = args.bsz
-        self.x_embedding, self.y_embedding, self.x_encoding, self.y_encoding = load_embeddings(folder)
+        encodings = np.load(os.path.abspath(f'{args.data_dir}/{split}.npy'), allow_pickle=True).item()
+        self.x_encoding = encodings['src']
+        self.y_encoding = encodings['trg']
         self.mode = mode
         self.single_loop = args.single_loop or force_single_loop
         self.i = 0
         self.scale_value = args.scale_value
         self.vocab_size = args.vocab_size
 
-        if args.use_random_embeddings:
-            # Create random embedding matrix: array of random vectors (vocab_size x embedding_dim)
-            # new key for random embedding matrix
-            random_embedding_matrix = random.normal(random.PRNGKey(args.random_emb_key), (self.vocab_size, args.embedding_dimension))
+        self.embedding_matrix = get_embedding_matrix(args.data_dir, args.use_random_embeddings,
+            args.vocab_size, args.embedding_dimension, args.random_emb_key)
+        assert self.embedding_matrix.shape[0] == self.vocab_size
+        assert self.embedding_matrix.shape[1] == args.embedding_dimension
             
-            # Lookup random embeddings for each sentence using token IDs
-            # For example: if x_encoding[0] = [101, 2023, 2003]  (token IDs for first sentence)
-            # Then x_embedding[0] = [
-            #     random_embedding_matrix[101],   # random vector for token 101
-            #     random_embedding_matrix[2023],  # random vector for token 2023
-            #     random_embedding_matrix[2003]   # random vector for token 2003
-            # ]
-            self.x_embedding = random_embedding_matrix[self.x_encoding]  # (num_sentences, seq_len_x, embedding_dim)
-            self.y_embedding = random_embedding_matrix[self.y_encoding]  # (num_sentences, seq_len_y, embedding_dim)
+        # Lookup random embeddings for each sentence using token IDs
+        # For example: if x_encoding[0] = [101, 2023, 2003]  (token IDs for first sentence)
+        # Then x_embedding[0] = [
+        #     random_embedding_matrix[101],   # random vector for token 101
+        #     random_embedding_matrix[2023],  # random vector for token 2023
+        #     random_embedding_matrix[2003]   # random vector for token 2003
+        # ]
+        self.x_embedding = self.embedding_matrix[self.x_encoding]  # (num_sentences, seq_len_x, embedding_dim)
+        self.y_embedding = self.embedding_matrix[self.y_encoding]  # (num_sentences, seq_len_y, embedding_dim)
             
     def __iter__(self):
         return self

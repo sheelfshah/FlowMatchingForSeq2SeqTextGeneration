@@ -2,6 +2,7 @@
 import numpy as np
 import jax.numpy as jnp
 import flax.linen as nn
+from flax.training import checkpoints
 from jax import random
 import jax
 
@@ -219,5 +220,14 @@ def get_model(args):
         variables = jax.device_put_replicated(variables, jax.local_devices())
     return model, variables
 
-def get_embedding_matrix():
-    return jnp.array(np.load("diffusion_models/embedding_matrix.npy"))
+def save_checkpoint(step, params, output_dir):
+    if params is not None:
+        print(f"Saving checkpoint at step {step}")
+        checkpoints.save_checkpoint(
+            ckpt_dir=output_dir,
+            target=params,
+            step=step,
+            prefix='model_flow_',
+            overwrite=True,
+            keep=1000 # keep last 1000 checkpoints
+        )

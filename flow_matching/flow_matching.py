@@ -4,16 +4,16 @@ import jax
 import jax.numpy as jnp
 from jax import random, grad, jit, value_and_grad
 import flax.linen as nn
-from flax.training import train_state, checkpoints, common_utils
+from flax.training import train_state
 import optax
 from transformers import AutoTokenizer
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils import main_dir, time_str, RNGKeys, Config, get_embedding_dir
-from models import get_model, get_embedding_matrix
-from data_utils import load_embeddings, DummyDataGenerator, MnistDataGenerator, QQPDataGenerator
+from utils import main_dir, time_str, RNGKeys, Config
+from models import get_model
+from data_utils import get_embedding_matrix, DummyDataGenerator, MnistDataGenerator, QQPDataGenerator
 
 import itertools
 import os
@@ -54,19 +54,6 @@ def batch_nearest_token_rounding(model_emb, text_emb):
     rounded_tokens = rounded_tokens.reshape(bsz, seqlen, text_emb.shape[-1])
     nn_idx = nn_idx.reshape(bsz, seqlen)
     return rounded_tokens, nn_idx
-
-def save_checkpoint(step, params, cfg, args, force=False):
-    valid_step = force or (step + 1) % args.checkpointing_interval == 0
-    if args.write_model and valid_step and params is not None:
-        print(f"Saving checkpoint at step {step + 1}")
-        checkpoints.save_checkpoint(
-            ckpt_dir=cfg.output_dir,
-            target=params,
-            step=step,
-            prefix='model_flow_',
-            overwrite=force,
-            keep=1000 # keep last 100 checkpoints
-        )
 
 def mse_loss_individual(pred, target):
     return jnp.mean((pred - target) ** 2, axis=tuple(range(1, pred.ndim)))
@@ -116,7 +103,8 @@ class FlowMatching:
             self.update_params(restored_params)
     
     def load_embedding_matrix(self):
-        self.embedding_matrix = get_embedding_matrix()
+        self.embedding_matrix = get_embedding_matrix(self.args.data_dir, self.args.use_random_embeddings,
+            self.args.vocab_size, self.args.embedding_dimension, self.args.random_emb_key)
         print("Embedding matrix loaded")
         
     def create_schedule(self):
@@ -139,14 +127,14 @@ class FlowMatching:
                 optax.adam(self.create_schedule())
             )
     
-    def create_generator(self, split="train"):
+    def create_generator(self, split="train", force_single_loop=False):
         self.key, train_key = random.split(self.key)
         if self.args.DUMMY:
             return DummyDataGenerator(self.args.bsz)
         if self.args.MNIST:
             return MnistDataGenerator(self.args.bsz, os.path.join(self.main_dir, "data/mnist_train_small.csv"))
         
-        return QQPDataGenerator(self.args, get_embedding_dir(split), self.args.mode)
+        return QQPDataGenerator(self.args, split, self.args.mode, force_single_loop)
     
     def create_train_state(self):
         state = train_state.TrainState.create(
@@ -185,28 +173,17 @@ class FlowMatching:
             x = x[:, self.args.len_dim:]
         _, nn_idx = batch_nearest_token_rounding(self.embedding_matrix, x)
         return [self.tokenizer.decode(nn_idx[i]) for i in range(nn_idx.shape[0])]
-
-if __name__ == "__main__":
-    flow_matching = FlowMatching(main_dir, time_str)
-    gen = flow_matching.create_generator(flow_matching.args.split)
-    sources = []
-    references = []
-    recoveries = []
-    for x0, x1, x0enc, x1enc in tqdm(gen):
-        x1_pred, _ = flow_matching.ode_solve(flow_matching.variables['params'], x0, x1)
-        sources += [flow_matching.tokenizer.decode(x0enc[i]) for i in range(x0enc.shape[0])]
-        references += [flow_matching.tokenizer.decode(x1enc[i]) for i in range(x1enc.shape[0])]
-        recoveries += flow_matching.decode(x1_pred, full_decode=False)
     
-    with open(f"{flow_matching.cfg.output_dir}/{flow_matching.args.split}_generations.json", "w") as f:
-        for source, reference, recovery in zip(sources, references, recoveries):
-            json.dumps({"source": source, "reference": reference, "recover": recovery}, file=f)
+    def create_generations(self, split, params):
+        gen = self.create_generator(split, force_single_loop=True)
+        sources = []
+        references = []
+        recoveries = []
+        for x0, x1, x0enc, x1enc in gen:
+            x1_pred = self.ode_solve(params, x0, x1)
+            sources += [self.tokenizer.decode(x0enc[i]) for i in range(x0enc.shape[0])]
+            references += [self.tokenizer.decode(x1enc[i]) for i in range(x1enc.shape[0])]
+            recoveries += self.decode(x1_pred)
+        return {"source": sources, "reference": references, "recover": recoveries}
 
-    # x0 = flow_matching.train_x_embedding[:10]         
-    # x1 = flow_matching.train_y_embedding[:10]
-    # print([flow_matching.tokenizer.decode(row) for row in flow_matching.train_x_encoding[:10]])         
-    # print([flow_matching.tokenizer.decode(row) for row in flow_matching.train_y_encoding[:10]])         
-    # # x1_hat = flow_matching.ode_solve(flow_matching.variables['params'], x0, x1, 1000)
-    # print("=="*30)
-    # # print(flow_matching.decode(x1_hat))
     

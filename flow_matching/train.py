@@ -4,7 +4,9 @@ from jax import random, jit, value_and_grad
 from tqdm import tqdm
 
 from utils import main_dir, time_str, RNGKeys
-from flow_matching import save_checkpoint, FlowMatching, mse_loss
+from models import save_checkpoint
+from flow_matching import FlowMatching, mse_loss
+from eval import eval
 
 FM = FlowMatching(main_dir, time_str)
 key = random.PRNGKey(RNGKeys().MainLoopKey)
@@ -42,7 +44,11 @@ if FM.args.split == 'train':
         if step % FM.args.print_interval == 0:
             tqdm.write(f'Step {step}, Loss: {loss:.6f}, LR: {FM.create_schedule()(state.step):.6f}')
         
-        save_checkpoint(step, state.params, FM.cfg, FM.args)
+        if step % FM.args.checkpointing_interval == 0:
+            val_gens = FM.create_generations("valid", state.params)
+            bleu, rougel, dist1, avg_len = eval(val_gens)
+            tqdm.write(f'Validation: BLEU: {bleu:.6f}, ROUGE-L: {rougel:.6f}, Dist1: {dist1:.6f}, AvgLen: {avg_len:.6f}')
+            save_checkpoint(step, state.params, FM.cfg.output_dir)
     
-    save_checkpoint(step, state.params, FM.cfg, FM.args, force=True)
+    save_checkpoint(step, state.params, FM.cfg.output_dir)
 

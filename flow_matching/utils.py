@@ -2,7 +2,7 @@
 import os
 import sys
 import time
-main_dir = "/home/sheels/Fall2025/10617/DiffuSeq/FlowSeq/"
+main_dir = "/home/sheels/Fall2025/10617/FlowMatchingForSeq2SeqTextGeneration/"
 os.chdir(main_dir)
 sys.path.append(main_dir)
 sys.path.append(os.path.join(main_dir, "flow_matching"))
@@ -54,6 +54,7 @@ class Config:
             "len_dim": 64,
             
             # data
+            "data_dir": "./datasets/QQP/",
             "single_loop": False,
             # choose from ["unconditional_generation", "seq_to_seq", "seq_to_seq_conditional", "seq_to_seq_conditional_onehot", "seq_to_seq_conditional_onehot_scaled"]
             "mode": "unconditional_generation", 
@@ -123,9 +124,6 @@ class Config:
             sys.stdout = open(os.path.join(self.output_dir, "output.log"), "w", buffering=1)
             sys.stderr = open(os.path.join(self.output_dir, "error.log"), "w")
 
-
-def get_embedding_dir(split):
-    return os.path.join(main_dir, f"embeddings/{split}_embeddings/")
 
 def plot_loss(output_dir):
     ls = open(os.path.join(output_dir, "output.log")).readlines()
