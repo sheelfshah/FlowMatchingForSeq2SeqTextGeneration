@@ -155,7 +155,9 @@ class DiTFlowModel(nn.Module):
     mlp_ratio: float = 4.0
     dropout_rate: float = 0.1
     time_emb_dim: int = 256
-    
+    time_emb_period: int = 10000
+    pos_emb_period: int = 10000 
+
     @nn.compact
     def __call__(self, x, t, train: bool = True):
         """
@@ -166,7 +168,7 @@ class DiTFlowModel(nn.Module):
             (batch, seq_len, output_dim) - Predicted velocity
         """
         # Time embedding
-        t_emb = timestep_embedding(t, self.time_emb_dim)
+        t_emb = timestep_embedding(t, self.time_emb_dim, self.time_emb_period)
         t_emb = nn.Dense(self.time_emb_dim)(t_emb)
         t_emb = nn.silu(t_emb)
         t_emb = nn.Dense(self.time_emb_dim)(t_emb)
@@ -175,7 +177,7 @@ class DiTFlowModel(nn.Module):
         h = nn.Dense(self.hidden_dim)(x)
 
         # Position embeddings
-        pos_emb = get_1d_sincos_pos_embed(self.hidden_dim, self.len_dim)
+        pos_emb = get_1d_sincos_pos_embed(self.hidden_dim, self.len_dim, self.pos_emb_period)
         h = h + pos_emb[None, :, :]
         
         # Transformer blocks
@@ -204,7 +206,9 @@ def get_model(args):
             num_heads=args.model__num_heads,
             mlp_ratio=args.model__mlp_ratio,
             dropout_rate=args.model__dropout_rate,
-            time_emb_dim=args.model__time_emb_dim
+            time_emb_dim=args.model__time_emb_dim,
+            time_emb_period=args.model__time_emb_period,
+            pos_emb_period=args.model__pos_emb_period
         )
     elif args.model == "FlowMLP":
         model = FlowMLP(

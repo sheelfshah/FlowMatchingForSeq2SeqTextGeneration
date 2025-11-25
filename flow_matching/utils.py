@@ -90,6 +90,8 @@ class Config:
             "model__dropout_rate": 0.,
             "model__hidden_dim": 256,
             "model__time_emb_dim": 256,
+            "model__time_emb_period": 10000,
+            "model__pos_emb_period": 10000,
             
             # debugging
             "OVERFIT": False,
