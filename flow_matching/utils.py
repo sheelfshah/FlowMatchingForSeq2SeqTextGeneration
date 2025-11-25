@@ -47,6 +47,8 @@ def add_dict_to_argparser(parser, default_dict):
 class Config:
     def __init__(self, main_dir, time_str):
         default_config = {
+            "name": "xyz",
+
             # embedding, not usually changed
             "vocab_size": 30522,
             "embedding_dimension": 128,
@@ -100,7 +102,7 @@ class Config:
         self.args = self.parser.parse_args()
         self.main_dir = main_dir
         self.time_str = time_str
-        self.output_dir = os.path.join(self.main_dir, f"diffusion_models/{self.time_str}")
+        self.output_dir = os.path.join(self.main_dir, f"diffusion_models/{self.args.name}_{self.time_str}")
         os.makedirs(self.output_dir, exist_ok=True)
         
         if self.args.DUMMY:
