@@ -263,7 +263,7 @@ def save_checkpoint(step, params, output_dir, ema_params=None):
                 ckpt_dir=output_dir,
                 target=ema_param,
                 step=step,
-                prefix=f'model_flow_ema_{chr(ord('A')+i)}_',
-                overwrite=True,
-                keep=1000 # keep last 1000 checkpoints
+                prefix=f"model_flow_ema_{ema_fac:.4f}_",
+                overwrite=False,
+                keep=None # keep all checkpoints
             )
