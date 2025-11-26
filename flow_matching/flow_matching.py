@@ -4,7 +4,6 @@ import jax
 import jax.numpy as jnp
 from jax import random, grad, jit, value_and_grad
 import flax.linen as nn
-from flax.training import train_state
 import optax
 from transformers import AutoTokenizer
 
@@ -12,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from utils import main_dir, time_str, RNGKeys, Config
-from models import get_model
+from models import get_model, EMATrainState
 from data_utils import get_embedding_matrix, DummyDataGenerator, MnistDataGenerator, QQPDataGenerator
 
 import itertools
@@ -20,6 +19,7 @@ import os
 from tqdm import tqdm
 from functools import partial
 import json
+from copy import deepcopy
 
 def nearest_token_rounding(model_emb, text_emb):
     """
@@ -85,6 +85,7 @@ class FlowMatching:
     
     def load_model(self):
         self.model, self.variables = get_model(self.args)
+        self.variables['ema_params'] = {ema_fac: deepcopy(self.variables['params']) for ema_fac in [0.999, 0.9999]}
         total_params = sum(x.size for x in jax.tree_util.tree_leaves(self.variables['params']))
         print(f"Model created with total parameters: {total_params}")
     
@@ -137,13 +138,12 @@ class FlowMatching:
         return QQPDataGenerator(self.args, split, self.args.mode, force_single_loop)
     
     def create_train_state(self):
-        state = train_state.TrainState.create(
+        state = EMATrainState.create(
             apply_fn=self.model.apply,
             params=self.variables['params'],
+            ema_params=self.variables['ema_params'],
             tx=self.tx
         )
-        if jax.local_device_count() > 1:
-            state = jax.device_put_replicated(state, jax.local_devices())
         return state
     
     @partial(jax.jit, static_argnums=(0,))

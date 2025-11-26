@@ -2,11 +2,15 @@
 import numpy as np
 import jax.numpy as jnp
 import flax.linen as nn
-from flax.training import checkpoints
+from flax import struct
+from flax.training import checkpoints, train_state
 from jax import random
 import jax
 
 from utils import RNGKeys
+
+from typing import Any, Callable, Dict, NamedTuple, Tuple
+
 
 def timestep_embedding(timesteps, dim, max_period=10000):
     """
@@ -220,11 +224,29 @@ def get_model(args):
     dummy_x = jnp.zeros((1, args.len_dim*(2 if args.mode == "seq_to_seq_conditional" else 1), args.embedding_dimension))
     dummy_t = jnp.zeros((1,))
     variables = model.init(random.PRNGKey(RNGKeys().ModelInitKey), dummy_x, dummy_t)
-    if jax.local_device_count() > 1:
-        variables = jax.device_put_replicated(variables, jax.local_devices())
     return model, variables
 
-def save_checkpoint(step, params, output_dir):
+class EMATrainState(train_state.TrainState):
+    """Train state including EMA parameters."""
+
+    ema_params: Dict[float, Any] = struct.field(default_factory=dict)
+
+@jax.jit
+def update_ema_params(
+    state: EMATrainState,
+) -> EMATrainState:
+    """Update EMA parameters."""
+    new_ema_params = {}
+    for ema_fac, ema_params in state.ema_params.items():
+        new_ema_params[ema_fac] = jax.tree_util.tree_map(
+            lambda param, ema_param: ema_fac * ema_param + (1 - ema_fac) * param,
+            state.params,
+            ema_params,
+        )
+
+    return state.replace(ema_params=new_ema_params)
+
+def save_checkpoint(step, params, output_dir, ema_params=None):
     if params is not None:
         print(f"Saving checkpoint at step {step}")
         checkpoints.save_checkpoint(
@@ -235,3 +257,13 @@ def save_checkpoint(step, params, output_dir):
             overwrite=True,
             keep=1000 # keep last 1000 checkpoints
         )
+    if ema_params is not None:
+        for i, (ema_fac, ema_param) in enumerate(ema_params.items()):
+            checkpoints.save_checkpoint(
+                ckpt_dir=output_dir,
+                target=ema_param,
+                step=step,
+                prefix=f'model_flow_ema_{chr(ord('A')+i)}_',
+                overwrite=True,
+                keep=1000 # keep last 1000 checkpoints
+            )

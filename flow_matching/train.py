@@ -4,7 +4,7 @@ from jax import random, jit, value_and_grad
 from tqdm import tqdm
 
 from utils import main_dir, time_str, RNGKeys
-from models import save_checkpoint
+from models import save_checkpoint, update_ema_params
 from flow_matching import FlowMatching, mse_loss
 from eval import eval
 
@@ -20,6 +20,7 @@ def create_train_step(model):
         
         loss, grads = value_and_grad(loss_fn)(state.params)
         state = state.apply_gradients(grads=grads)
+        state = update_ema_params(state)
         return state, loss
     
     return jit(train_step)
@@ -48,7 +49,12 @@ if FM.args.split == 'train':
             val_gens = FM.create_generations("valid", state.params)
             bleu, rougel, dist1, avg_len = eval(val_gens)
             tqdm.write(f'Validation: BLEU: {bleu:.6f}, ROUGE-L: {rougel:.6f}, Dist1: {dist1:.6f}, AvgLen: {avg_len:.6f}')
-            save_checkpoint(step, state.params, FM.cfg.output_dir)
+            for ema_fac, ema_param in state.ema_params.items():
+                val_gens = FM.create_generations("valid", ema_param)
+                bleu, rougel, dist1, avg_len = eval(val_gens)
+                tqdm.write(f'Validation EMA {ema_fac}: BLEU: {bleu:.6f}, ROUGE-L: {rougel:.6f}, Dist1: {dist1:.6f}, AvgLen: {avg_len:.6f}')
+            
+            save_checkpoint(step, state.params, FM.cfg.output_dir, state.ema_params)
     
-    save_checkpoint(step, state.params, FM.cfg.output_dir)
+    save_checkpoint(step, state.params, FM.cfg.output_dir, state.ema_params)
 

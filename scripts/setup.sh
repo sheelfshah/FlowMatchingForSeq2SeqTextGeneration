@@ -8,5 +8,6 @@ pip install transformers
 pip install tqdm
 pip install torchmetrics nltk
 pip install matplotlib seaborn
+pip install pandas
 
 conda env export > environment.yml
