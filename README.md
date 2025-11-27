@@ -34,6 +34,13 @@ You can also use `sbatch scripts/run.sh` to run the script on a SLURM GPU cluste
 
 The script calls `flow_matching/train.py` with specific arguments. The default values of these arguments, along with some description, are specified in `flow_matching/utils.py`.
 
+## Plotting
+
+To generate plots from output logs of training runs, run:
+```bash
+python scripts/process_logs.py
+```
+
 ## Acknowledgement
 
 This repo is based on the DiffuSeq project (https://github.com/Shark-NLP/DiffuSeq). However, most code was revamped to run in JAX/Flax environment, and only the data processing pipeline has been retained. The pretrained embedding from DiffuSeq is extracted as a .npy file and used for experiments.

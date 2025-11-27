@@ -164,12 +164,12 @@ class FlowMatching:
             u_t = self.forward_pass(params, x_t, t)
             x_t = x_t + u_t * dt
             t = t + dt
-            if self.args.mode == "seq_to_seq_conditional":
+            if "_conditional" in self.args.mode:
                 x_t = x_t.at[:, :self.args.len_dim].set(x_0[:, :self.args.len_dim])
         return x_t
     
     def decode(self, x, full_decode=False):
-        if (not full_decode) and self.args.mode == "seq_to_seq_conditional":
+        if (not full_decode) and "_conditional" in self.args.mode:
             x = x[:, self.args.len_dim:]
         _, nn_idx = batch_nearest_token_rounding(self.embedding_matrix, x)
         return [self.tokenizer.decode(nn_idx[i]) for i in range(nn_idx.shape[0])]

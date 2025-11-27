@@ -204,7 +204,7 @@ def get_model(args):
         model = DiTFlowModel(
             input_dim=args.embedding_dimension,
             output_dim=args.embedding_dimension,
-            len_dim=args.len_dim*(2 if args.mode == "seq_to_seq_conditional" else 1),
+            len_dim=args.len_dim*(2 if "_conditional" in args.mode else 1),
             hidden_dim=args.model__hidden_dim,
             num_layers=args.model__num_layers,
             num_heads=args.model__num_heads,
@@ -221,7 +221,7 @@ def get_model(args):
         )
     else:
         raise ValueError("Invalid model type")
-    dummy_x = jnp.zeros((1, args.len_dim*(2 if args.mode == "seq_to_seq_conditional" else 1), args.embedding_dimension))
+    dummy_x = jnp.zeros((1, args.len_dim*(2 if "_conditional" in args.mode else 1), args.embedding_dimension))
     dummy_t = jnp.zeros((1,))
     variables = model.init(random.PRNGKey(RNGKeys().ModelInitKey), dummy_x, dummy_t)
     return model, variables
@@ -265,5 +265,5 @@ def save_checkpoint(step, params, output_dir, ema_params=None):
                 step=step,
                 prefix=f"model_flow_ema_{ema_fac:.4f}_",
                 overwrite=False,
-                keep=None # keep all checkpoints
+                keep=1000 # keep last 1000 checkpoints
             )
