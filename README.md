@@ -34,6 +34,15 @@ You can also use `sbatch scripts/run.sh` to run the script on a SLURM GPU cluste
 
 The script calls `flow_matching/train.py` with specific arguments. The default values of these arguments, along with some description, are specified in `flow_matching/utils.py`.
 
+## Evaluation
+
+To evaluate a model, run:
+```bash
+nohup bash scripts/eval.sh > nohup.out 2>&1 &
+```
+
+The script calls `flow_matching/eval.py` with specific arguments. Note, you might need to rename some folders from `model_flow_xxxxx` to `model_flow_noema_xxxxx` to match the expected format of checkpoints.
+
 ## Plotting
 
 To generate plots from output logs of training runs, run:

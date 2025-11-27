@@ -4,6 +4,7 @@ import jax
 import jax.numpy as jnp
 from jax import random, grad, jit, value_and_grad
 import flax.linen as nn
+from flax.training import checkpoints
 import optax
 from transformers import AutoTokenizer
 
@@ -103,7 +104,7 @@ class FlowMatching:
                 ckpt_dir=checkpoint_dir,
                 target=None, #variables['params'],
                 step=step,
-                prefix='model_flow_'
+                prefix='model_flow_noema_'
             )
             self.update_params(restored_params)
             for ema_fac in [0.999, 0.9999]:
@@ -190,13 +191,13 @@ class FlowMatching:
         _, nn_idx = batch_nearest_token_rounding(self.embedding_matrix, x)
         return [self.tokenizer.decode(nn_idx[i]) for i in range(nn_idx.shape[0])]
     
-    def create_generations(self, split, params):
+    def create_generations(self, split, params, num_steps=100):
         gen = self.create_generator(split, force_single_loop=True)
         sources = []
         references = []
         recoveries = []
         for x0, x1, x0enc, x1enc in gen:
-            x1_pred = self.ode_solve(params, x0, x1)
+            x1_pred = self.ode_solve(params, x0, x1, num_steps)
             sources += [self.tokenizer.decode(x0enc[i]) for i in range(x0enc.shape[0])]
             references += [self.tokenizer.decode(x1enc[i]) for i in range(x1enc.shape[0])]
             recoveries += self.decode(x1_pred)

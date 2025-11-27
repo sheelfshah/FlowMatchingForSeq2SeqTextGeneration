@@ -8,6 +8,10 @@ from torchmetrics.text.rouge import ROUGEScore
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 import nltk
 
+from utils import main_dir, time_str
+from flow_matching import FlowMatching
+
+
 def get_bleu(recover, reference):
     return sentence_bleu([reference.split()], recover.split(), smoothing_function=SmoothingFunction().method4,)
 
@@ -76,3 +80,39 @@ def eval(generation_dict, sos='[CLS]', eos='[SEP]', sep='[SEP]', pad='[PAD]', di
 
     return np.mean(bleu), np.mean(rougel), np.mean(dist1), np.mean(avg_len)
 
+if __name__ == '__main__':
+    FM = FlowMatching(main_dir, time_str)
+    results = {
+        1: {},
+        2: {},
+        4: {},
+        8: {},
+        16: {},
+        32: {},
+        64: {},
+        100: {},
+        200: {},
+        500: {},
+        1000: {},
+        2000: {}
+    }
+    for n in results.keys():
+        val_gens = FM.create_generations("valid", FM.variables['ema_params'][0.9999], num_steps = n)
+        bleu, rougel, dist1, avg_len = eval(val_gens)
+        results[n]["valid"] = {}
+        results[n]["valid"]["bleu"] = bleu
+        results[n]["valid"]["rougel"] = rougel
+        results[n]["valid"]["dist1"] = dist1
+        results[n]["valid"]["avg_len"] = avg_len
+        print(f"Num steps: {n}, BLEU: {bleu:.6f}, ROUGE-L: {rougel:.6f}, Dist1: {dist1:.6f}, AvgLen: {avg_len:.6f}")
+        test_gens = FM.create_generations("test", FM.variables['ema_params'][0.9999], num_steps = n)
+        bleu, rougel, dist1, avg_len = eval(test_gens)
+        results[n]["test"] = {}
+        results[n]["test"]["bleu"] = bleu
+        results[n]["test"]["rougel"] = rougel
+        results[n]["test"]["dist1"] = dist1
+        results[n]["valid"]["avg_len"] = avg_len
+        print(f"Num steps: {n}, BLEU: {bleu:.6f}, ROUGE-L: {rougel:.6f}, Dist1: {dist1:.6f}, AvgLen: {avg_len:.6f}")
+    
+    json.dump(results, open(os.path.join(FM.main_dir, f"plots/eval_{FM.args.checkpoint_dir}.json"), 'w'))
+    

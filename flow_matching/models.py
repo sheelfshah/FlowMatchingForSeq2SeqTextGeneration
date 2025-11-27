@@ -253,7 +253,7 @@ def save_checkpoint(step, params, output_dir, ema_params=None):
             ckpt_dir=output_dir,
             target=params,
             step=step,
-            prefix='model_flow_',
+            prefix='model_flow_noema_',
             overwrite=True,
             keep=1000 # keep last 1000 checkpoints
         )
