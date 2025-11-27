@@ -89,19 +89,35 @@ class FlowMatching:
         total_params = sum(x.size for x in jax.tree_util.tree_leaves(self.variables['params']))
         print(f"Model created with total parameters: {total_params}")
     
-    def update_params(self, params):
-        self.variables['params'] = params
+    def update_params(self, params, ema_fac=None):
+        if ema_fac is None:
+            self.variables['params'] = params
+        else:
+            self.variables['ema_params'][ema_fac] = params
     
-    def load_checkpoint(self):
+    def load_checkpoint(self, step=None):
         if self.args.checkpoint_dir != "":
             print("Loading model from checkpoint")
             checkpoint_dir = os.path.join(self.main_dir, f"diffusion_models/{self.args.checkpoint_dir}")
             restored_params = checkpoints.restore_checkpoint(
                 ckpt_dir=checkpoint_dir,
                 target=None, #variables['params'],
+                step=step,
                 prefix='model_flow_'
             )
             self.update_params(restored_params)
+            for ema_fac in [0.999, 0.9999]:
+                try:
+                    restored_params = checkpoints.restore_checkpoint(
+                        ckpt_dir=checkpoint_dir,
+                        target=None, #variables['params'],
+                        step=step,
+                        prefix=f'model_flow_ema_{ema_fac:.4f}_'
+                    )
+                    self.update_params(restored_params, ema_fac)
+                    print(f"Loaded EMA params for EMA factor {ema_fac:.4f}")
+                except:
+                    print(f"Failed to load EMA params for EMA factor {ema_fac:.4f}")
     
     def load_embedding_matrix(self):
         self.embedding_matrix = get_embedding_matrix(self.args.data_dir, self.args.use_random_embeddings,
