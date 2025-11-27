@@ -14,7 +14,6 @@ plt.rcParams.update({
     "ytick.labelsize": 8
 })
 
-HEIGHT_ASPECT_RATIO = 0.618 # Golden ratio for aesthetically pleasing aspect
 sns.set_theme(style="whitegrid", context="paper", font_scale=1.6)
 
 def process_logs(logs_dir, name=None):

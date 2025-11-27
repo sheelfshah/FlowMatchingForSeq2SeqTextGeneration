@@ -149,7 +149,7 @@ class QQPDataGenerator():
     def __next__(self):
         self.key, key1, key2, key3 = random.split(self.key, 4)
         if self.single_loop:
-            if self.i >= self.x_embedding.shape[0]:
+            if self.i + self.bsz >= self.x_embedding.shape[0]:
                 raise StopIteration
             idx = jnp.arange(self.i, self.i + self.bsz)
             self.i += self.bsz
