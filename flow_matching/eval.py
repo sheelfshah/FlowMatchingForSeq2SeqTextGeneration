@@ -9,7 +9,24 @@ from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 import nltk
 
 from utils import main_dir, time_str
-from flow_matching import FlowMatching
+from flow_matching import FlowMatching, mse_loss
+import jax.numpy as jnp
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+plt.rcParams.update({
+    "text.usetex": False,      # Tell Matplotlib to use LaTeX for all text
+    "font.family": "serif",   # Use serif fonts (like Computer Modern)
+    "font.serif": ["Computer Modern Roman"], # Specify the font
+    "font.size": 10,          # Match the main paper font size (often 10pt)
+    "axes.labelsize": 10,
+    "legend.fontsize": 9,
+    "xtick.labelsize": 8,
+    "ytick.labelsize": 8
+})
+
+sns.set_theme(style="whitegrid", context="paper", font_scale=1.6)
 
 
 def get_bleu(recover, reference):
@@ -74,6 +91,32 @@ def eval(generation_dict, sos='[CLS]', eos='[SEP]', sep='[SEP]', pad='[PAD]', di
 
 if __name__ == '__main__':
     FM = FlowMatching(main_dir, time_str)
+    generator = FM.create_generator("valid", True)
+    x_0, x_1, _, _ = next(generator)
+    t = jnp.zeros((x_0.shape[0],))
+    num_points = 100
+    dt = 1/num_points
+    losses = jnp.zeros(num_points+1)
+    times = jnp.zeros(num_points+1)
+    v_t = x_1 - x_0
+    for i in range(num_points+1):
+        t_unsqz = t[:, None, None]
+        x_t = (1-t_unsqz)*x_0 + t_unsqz*x_1
+        u_t = FM.forward_pass(FM.variables['ema_params'][0.9999], x_t, t)
+        losses = losses.at[i].set(mse_loss(u_t, v_t))
+        times = times.at[i].set(t[0])
+        t += dt
+    
+    fig, ax = plt.subplots(figsize=(8, 5))
+    sns.lineplot(x=np.array(times), y=np.array(losses))
+    ax.set_xlabel('t')
+    ax.set_ylabel('Loss')
+    plt.title('Loss vs t')
+    plt.savefig("plots/loss_vs_t.pdf", format='pdf', bbox_inches='tight')
+    plt.show()
+
+    # sys.exit()
+
     results = {
         1: {},
         2: {},
