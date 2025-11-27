@@ -3,6 +3,8 @@
 This project implements flow matching for sequence-to-sequence text generation tasks.
 We use continuous representations of text sequences to enable direct transfer of diffusion techniques from image generation to text generation.
 
+In this repository, we share our data processing pipeline, training code, evaluation code and pre-trained checkpoints.
+
 ## Environment Setup
 
 Run the commands in the setup script:
@@ -33,6 +35,10 @@ The script will create a checkpoint directory in the `diffusion_models/` directo
 You can also use `sbatch scripts/run.sh` to run the script on a SLURM GPU cluster.
 
 The script calls `flow_matching/train.py` with specific arguments. The default values of these arguments, along with some description, are specified in `flow_matching/utils.py`.
+
+## Checkpoints
+
+All our checkpoints are stored in the `diffusion_models/` directory. Only some of the checkpoints for `dit_big_s2sC_pte_ema_tep100` were uploaded due to space constraints.
 
 ## Evaluation
 

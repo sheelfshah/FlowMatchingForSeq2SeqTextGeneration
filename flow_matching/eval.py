@@ -69,14 +69,6 @@ def eval(generation_dict, sos='[CLS]', eos='[SEP]', sep='[SEP]', pad='[PAD]', di
         bleu.append(get_bleu(recover, reference))
         rougel.append(ROUGEScore()(recover, reference)['rougeL_fmeasure'].tolist())
         dist1.append(distinct_n_gram([recover], 1))
-            
-    # P, R, F1 = score(recovers, references, model_type='microsoft/deberta-xlarge-mnli', lang='en', verbose=True)
-    # print('*'*30)
-    # print('avg BLEU score', np.mean(bleu))
-    # print('avg ROUGE-L score', np.mean(rougel))
-    # # print('avg berscore', torch.mean(F1))
-    # print('avg dist1 score', np.mean(dist1))
-    # print('avg len', np.mean(avg_len))
 
     return np.mean(bleu), np.mean(rougel), np.mean(dist1), np.mean(avg_len)
 
@@ -114,5 +106,6 @@ if __name__ == '__main__':
         results[n]["test"]["avg_len"] = avg_len
         print(f"Num steps: {n}, BLEU: {bleu:.6f}, ROUGE-L: {rougel:.6f}, Dist1: {dist1:.6f}, AvgLen: {avg_len:.6f}")
     
-    json.dump(results, open(os.path.join(FM.main_dir, f"plots/eval_{FM.args.checkpoint_dir}.json"), 'w'))
+    os.makedirs(os.path.join(FM.main_dir, f"plots/eval_{FM.args.checkpoint_dir}"), exist_ok=True)
+    json.dump(results, open(os.path.join(FM.main_dir, f"plots/eval_{FM.args.checkpoint_dir}/eval_results.json"), 'w'))
     
