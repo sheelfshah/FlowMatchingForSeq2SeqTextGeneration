@@ -5,6 +5,9 @@ We use continuous representations of text sequences to enable direct transfer of
 
 In this repository, we share our data processing pipeline, training code, evaluation code and pre-trained checkpoints.
 
+## Results
+![BLEU Score Comparison of DiffuSeq to Flow Matching (Ours)](plots/bleu_comparision.pdf)
+
 ## Environment Setup
 
 Run the commands in the setup script:
@@ -58,4 +61,4 @@ python scripts/process_logs.py
 
 ## Acknowledgement
 
-This repo is based on the DiffuSeq project (https://github.com/Shark-NLP/DiffuSeq). However, most code was revamped to run in JAX/Flax environment, and only the data processing pipeline has been retained. The pretrained embedding from DiffuSeq is extracted as a .npy file and used for experiments.
+This repo is based on the DiffuSeq project (https://github.com/Shark-NLP/DiffuSeq). However, all code was revamped to run in JAX/Flax environment, and only the data processing pipeline has been retained. The pretrained embedding from DiffuSeq is extracted as a `.npy` file and used for experiments.
