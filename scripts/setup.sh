@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Run these commands to set up the environment
+
 conda create -n FlowMatchingForSeq2SeqTextGeneration python=3.10
 conda activate FlowMatchingForSeq2SeqTextGeneration
 

@@ -17,12 +17,14 @@ Run the commands in the setup script:
 ```bash
 git clone https://github.com/sheelfshah/FlowMatchingForSeq2SeqTextGeneration.git
 cd FlowMatchingForSeq2SeqTextGeneration
-cat scripts/setup.sh
+# replace hard-coded main_dir in utils.py
+sed -i "s@main_dir = \".*\"@main_dir = \"$(pwd)/\"@g" flow_matching/utils.py
 # you could also just source this script but it is safer to see the commands before running them
+cat scripts/setup.sh
 ```
 
 ## Data Setup
-The data was downloaded from the DiffuSeq repository link: https://drive.google.com/drive/folders/1BHGCeHRZU7MQF3rsqXBIOCU2WIC3W6fb. It is already in the `datasets/QQP/` directory, but can be redownloaded if needed.
+The data was downloaded from the DiffuSeq repository link: https://drive.google.com/drive/folders/1BHGCeHRZU7MQF3rsqXBIOCU2WIC3W6fb. It is already present in the `datasets/QQP/` directory, but can be redownloaded if needed.
 
 The `.npy` files in `datasets/QQP/` are tokenized versions of the data. To re-generate them, run:
 ```bash
@@ -32,12 +34,12 @@ bash scripts/tokenize_data.sh
 
 ## Training
 
-To train a model, run:
+To train a model, run (after appropriate modifications to `scripts/run.sh`):
 ```bash
 nohup bash scripts/run.sh > nohup.out 2>&1 &
 ```
 
-The script will create a checkpoint directory in the `diffusion_models/` directory, and will log losses/eval scores here. It will also save checkpoints that can be used for any downstream analysis.
+The script will create a checkpoint directory in the `diffusion_models/` directory, and will log losses/eval scores there. It will also save checkpoints that can be used for any downstream analysis.
 You can also use `sbatch scripts/run.sh` to run the script on a SLURM GPU cluster.
 
 The script calls `flow_matching/train.py` with specific arguments. The default values of these arguments, along with some description, are specified in `flow_matching/utils.py`.
