@@ -11,6 +11,8 @@ In this repository, we share our data processing pipeline, training code, evalua
 
 ## Environment Setup
 
+Warning: This repository is quite big (~ 9 GB) due to the pre-trained checkpoints. You can try excluding the checkpoints using `export GIT_LFS_SKIP_SMUDGE=1` before `git clone` and then `git lfs pull --exclude="diffusion_models/"` to download other `lfs` files except the checkpoints.
+
 Run the commands in the setup script:
 ```bash
 git clone https://github.com/sheelfshah/FlowMatchingForSeq2SeqTextGeneration.git
