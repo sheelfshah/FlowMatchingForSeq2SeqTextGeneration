@@ -1,5 +1,5 @@
 # Flow Matching for Sequence-to-Sequence Text Generation
-[![arXiv](https://img.shields.io/badge/arXiv-2106.01234-b31b1b.svg)](https://arxiv.org/abs/TODO)
+[![Report](https://img.shields.io/badge/report-PDF-b31b1b.svg)](plots/sheels_10617_project_final.pdf)
 
 This project implements flow matching for sequence-to-sequence text generation tasks.
 We use continuous representations of text sequences to enable direct transfer of diffusion techniques from image generation to text generation.
